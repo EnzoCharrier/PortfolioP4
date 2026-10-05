@@ -1,13 +1,20 @@
-/** Bruitages synthétisés (aucun fichier audio). Le contexte est réveillé au premier geste. */
+/**
+ * Bruitages synthétisés (aucun fichier audio).
+ * Le contexte audio n'est créé qu'au premier geste de l'utilisateur, comme l'exigent les navigateurs :
+ * avant ça, beep() ne fait rien (et Chrome n'affiche plus d'avertissement).
+ */
 export class AudioManager {
   #ctx = null;
   #muted = false;
 
   constructor() {
-    const Ctx = window.AudioContext ?? window.webkitAudioContext;
-    this.#ctx = Ctx ? new Ctx() : null;
+    const unlock = () => {
+      const Ctx = window.AudioContext ?? window.webkitAudioContext;
+      if (Ctx && !this.#ctx) this.#ctx = new Ctx();
+      this.#ctx?.resume();
+    };
     for (const type of ['keydown', 'pointerdown']) {
-      addEventListener(type, () => this.#ctx?.resume(), { once: true });
+      addEventListener(type, unlock, { once: true });
     }
   }
 
